@@ -16,6 +16,11 @@ class Team(db.Model):
 
   @classmethod
   def get_or_add_team(cls, team_name):
+    """
+    Used by the stats scraper to register new teams to collect stats for.
+    
+    If the team already has been registered, this function returns the team_id
+    """
     team_id = db.session.query(Team.id).filter(Team.name == team_name).first()
     if team_id:
       return int(team_id[0])
@@ -24,6 +29,19 @@ class Team(db.Model):
       db.session.add(new_team)
       db.session.commit()
       return new_team.id
+
+  @classmethod
+  def get_team(cls, team_name):
+    """
+    Returns the team_id for the given team_name.
+
+    If no such team exists, then throws a ValueError
+    """
+    team_id = db.session.query(Team.id).filter(Team.name == team_name).first()
+    if team_id:
+      return int(team_id[0])
+    else:
+      raise ValueError('No such team: %s', team_name)
 
 class Player(db.Model):
   __tablename__ = 'players'
@@ -48,7 +66,6 @@ class Player(db.Model):
       db.session.add(new_player)
       db.session.commit()
       return new_player.id, new_player.team_id
-
 
 class RushingStat(db.Model):
   __tablename__ = 'rushing_stats'
@@ -76,6 +93,27 @@ class RushingStat(db.Model):
     db.session.add(rushing_stat)
     db.session.commit()
 
+  @classmethod
+  def get_rushing_stats_by_team(cls, team_id):
+    """
+    Returns all the RushingStat 
+    """
+    team_rushing_stats = db.session.query(RushingStat, Player.player_name) \
+                                   .filter(RushingStat.player_id == Player.id) \
+                                   .filter(Team.id == team_id) \
+                                   .filter(Player.team_id == Team.id)
+    return team_rushing_stats
+
+  def to_json(self):
+    """
+    Returns basic json output of a RushingStat
+    """
+    return {
+      'attempts': self.attempts,
+      'yards': self.yards,
+      'touchdowns': self.touchdowns,
+      'first_downs': self.first_downs
+    }
 
 class PassingStat(db.Model):
   __tablename__ = 'passing_stats'
