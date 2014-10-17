@@ -3,7 +3,6 @@ import requests
 
 SERVER = 'http://localhost:5000'
 
-
 class Client():
 
   def __init__(self):
