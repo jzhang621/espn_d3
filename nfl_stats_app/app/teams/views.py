@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import json
 import string
 
@@ -5,7 +7,7 @@ from flask import Blueprint
 
 from nfl_stats_app.app.models import ReceivingStat, RushingStat, PassingStat, Team 
 
-teams_blueprint = Blueprint('teams', __name__, template_folder='templates')
+teams_blueprint = Blueprint('teams', __name__, template_folder='templates/teams')
 
 def normalize_team_name(team_name):
   """
@@ -35,9 +37,20 @@ def render_team_page(team_name, stat_type):
   elif stat_type == 'receiving':
     stats = ReceivingStat.get_receiving_stats_by_team(team_id) 
 
+  totals = defaultdict(int)
   out = []
+
   for stat in stats: 
     json_out = stat[0].to_json()
+    for cat, value in json_out.iteritems():
+      totals[cat] += value
+
     json_out['player_name'] = stat[1]
     out.append(json_out)
-  return json.dumps(out)
+     
+  ret = {'individual': out, 'totals': totals}
+  return json.dumps(ret)
+
+@teams_blueprint.route('/<team_name>')
+def render_team_home_page(team_name):
+  pass 
