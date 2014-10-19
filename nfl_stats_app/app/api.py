@@ -1,10 +1,12 @@
+import json
+
 from flask import Blueprint, jsonify, request
 
 from models import DefensiveStat, ReceivingStat, RushingStat, PassingStat, Player, Team, db
 
-blueprint = Blueprint('api', __name__)
+api_blueprint = Blueprint('api', __name__)
 
-@blueprint.route('/addTeam', methods=['POST', 'GET'])
+@api_blueprint.route('/add-team', methods=['POST', 'GET'])
 def get_or_add_team():
   """
 
@@ -14,8 +16,7 @@ def get_or_add_team():
 
   return jsonify({'team_id': team_id})
 
-
-@blueprint.route('/addPlayerStats', methods=['POST'])
+@api_blueprint.route('/add-player-stats', methods=['POST'])
 def add_player_stats():
   data = request.json['stats']
   player_name = data['player_name']
@@ -26,7 +27,6 @@ def add_player_stats():
   player_id = Player.get_or_add_player(player_name, team_id)
   data['player_id'] = player_id[0]
 
-
   if stats_type == 'Rushing':
     class_type = RushingStat   
   elif stats_type == 'Passing':
@@ -35,7 +35,6 @@ def add_player_stats():
     class_type = ReceivingStat
   elif stats_type == 'Defense':
     class_type = DefensiveStat
-
 
   class_type.add_stat(**data)
   return jsonify({'player_id': player_id})

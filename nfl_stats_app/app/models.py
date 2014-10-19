@@ -16,6 +16,11 @@ class Team(db.Model):
 
   @classmethod
   def get_or_add_team(cls, team_name):
+    """
+    Used by the stats scraper to register new teams to collect stats for.
+    
+    If the team already has been registered, this function returns the team_id
+    """
     team_id = db.session.query(Team.id).filter(Team.name == team_name).first()
     if team_id:
       return int(team_id[0])
@@ -24,6 +29,19 @@ class Team(db.Model):
       db.session.add(new_team)
       db.session.commit()
       return new_team.id
+
+  @classmethod
+  def get_team(cls, team_name):
+    """
+    Returns the team_id for the given team_name.
+
+    If no such team exists, then throws a ValueError
+    """
+    team_id = db.session.query(Team.id).filter(Team.name == team_name).first()
+    if team_id:
+      return int(team_id[0])
+    else:
+      raise ValueError('No such team: %s', team_name)
 
 class Player(db.Model):
   __tablename__ = 'players'
@@ -49,7 +67,6 @@ class Player(db.Model):
       db.session.commit()
       return new_player.id, new_player.team_id
 
-
 class RushingStat(db.Model):
   __tablename__ = 'rushing_stats'
   player_id = db.Column(db.Integer, db.ForeignKey('players.id'), primary_key=True)
@@ -72,9 +89,32 @@ class RushingStat(db.Model):
     yards = int(kwargs['Yds'])
     touchdowns = int(kwargs['TD'])
     first_downs = int(kwargs['FD'])
+
     rushing_stat = RushingStat(player_id, attempts, yards, touchdowns, first_downs) 
     db.session.add(rushing_stat)
     db.session.commit()
+
+  @classmethod
+  def get_rushing_stats_by_team(cls, team_id):
+    """
+    Returns all the RushingStat 
+    """
+    team_rushing_stats = db.session.query(RushingStat, Player.player_name) \
+                                   .filter(RushingStat.player_id == Player.id) \
+                                   .filter(Team.id == team_id) \
+                                   .filter(Player.team_id == Team.id)
+    return team_rushing_stats
+
+  def to_json(self):
+    """
+    Returns basic json output of a RushingStat
+    """
+    return {
+      'attempts': self.attempts,
+      'yards': self.yards,
+      'touchdowns': self.touchdowns,
+      'first_downs': self.first_downs
+    }
 
 
 class PassingStat(db.Model):
@@ -105,11 +145,36 @@ class PassingStat(db.Model):
     touchdowns = int(kwargs['TD'])
     interceptions = int(kwargs['Int'])
     sacks = int(kwargs['Sack'])
-    rushing_stat = PassingStat(player_id, attempts, completions, yards, touchdowns, interceptions, sacks)
-    db.session.add(rushing_stat)
+
+    passing_stat = PassingStat(player_id, attempts, completions, yards, touchdowns, interceptions, sacks)
+    db.session.add(passing_stat)
     db.session.commit()
 
-  
+  @classmethod
+  def get_passing_stats_by_team(cls, team_id):
+    """
+    Returns all the RushingStat 
+    """
+    team_passing_stats = db.session.query(PassingStat, Player.player_name) \
+                                   .filter(PassingStat.player_id == Player.id) \
+                                   .filter(Team.id == team_id) \
+                                   .filter(Player.team_id == Team.id)
+    return team_passing_stats
+
+  def to_json(self):
+    """
+    Returns basic json output of a RushingStat
+    """
+    return {
+      'attempts': self.attempts,
+      'completions': self.completions,
+      'yards': self.yards,
+      'touchdowns': self.touchdowns,
+      'interceptions': self.interceptions,
+      'sacks': self.sacks
+    }
+
+ 
 class ReceivingStat(db.Model):
   __tablename__ = 'receiving_stats'
   player_id = db.Column(db.Integer, db.ForeignKey('players.id'), primary_key=True)
@@ -138,9 +203,34 @@ class ReceivingStat(db.Model):
     first_downs = int(kwargs['FD'])
     yac = int(kwargs['YAC'])
     targets = int(kwargs['Tar'])
-    rushing_stat = ReceivingStat(player_id, receptions, yards, touchdowns, first_downs, targets, yac)
-    db.session.add(rushing_stat)
+
+    receiving_stat = ReceivingStat(player_id, receptions, yards, touchdowns, first_downs, targets, yac)
+    db.session.add(receiving_stat)
     db.session.commit()
+
+  @classmethod
+  def get_receiving_stats_by_team(cls, team_id):
+    """
+    Returns all the RushingStat 
+    """
+    team_receiving_stats = db.session.query(ReceivingStat, Player.player_name) \
+                                   .filter(ReceivingStat.player_id == Player.id) \
+                                   .filter(Team.id == team_id) \
+                                   .filter(Player.team_id == Team.id)
+    return team_receiving_stats
+
+  def to_json(self):
+    """
+    Returns basic json output of a RushingStat
+    """
+    return {
+      'receptions': self.receptions,
+      'yards': self.yards,
+      'touchdowns': self.touchdowns,
+      'first_downs': self.first_downs,
+      'yac': self.yac,
+      'targets': self.targets
+    }
 
 
 class DefensiveStat(db.Model):
@@ -165,6 +255,7 @@ class DefensiveStat(db.Model):
     interceptions = int(kwargs['Int'])
     sacks = int(kwargs['Sack'])
     touchdowns = int(kwargs['TD'])
+
     defensive_stat = DefensiveStat(player_id, tackles, interceptions, sacks, touchdowns)
     db.session.add(defensive_stat)
     db.session.commit()

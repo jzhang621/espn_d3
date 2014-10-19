@@ -3,7 +3,6 @@ import requests
 
 SERVER = 'http://localhost:5000'
 
-
 class Client():
 
   def __init__(self):
@@ -18,11 +17,11 @@ class Client():
     return response
  
   def get_or_create_team(self, team_name):
-    route = 'api/addTeam'
+    route = 'api/add-team'
     parameters = {'team_name': team_name}
     return self._post_request(route, parameters)
 
   def add_player_stats(self, stat_type, stats):
-    route = 'api/addPlayerStats'
+    route = 'api/add-player-stats'
     parameters = {'stat_type': stat_type, 'stats': stats}
     return self._post_request(route, parameters)
